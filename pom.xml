@@ -21,6 +21,7 @@
             <groupId>org.elasticsearch</groupId>
             <artifactId>elasticsearch</artifactId>
             <version>${elasticsearch.version}</version>
+			<scope>provided</scope>
         </dependency>
         
         <!-- for json requesting of external elasticsearch cluster -->
@@ -60,6 +61,45 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+    <profiles>
+    	<profile>
+    		<activation>
+    			<os><family>!windows</family></os>
+    		</activation>
+    		<build>
+    			<plugins>
+    				<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>rpm-maven-plugin</artifactId>
+						<version>2.1-alpha-3</version>
+						<extensions>true</extensions>
+						<executions>
+							<execution>
+								<id>attach-rpm</id>
+								<goals>
+									<goal>rpm</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<group>Application/Internet</group>
+							<defaultFilemode>644</defaultFilemode>
+		                    <defaultDirmode>755</defaultDirmode>
+							<defaultUsername>root</defaultUsername>
+		                    <defaultGroupname>root</defaultGroupname>
+							<mappings>
+								<mapping>
+									<directory>/usr/share/elasticsearch/plugins/reindex</directory>
+									<dependency/>
+									<artifact/>
+								</mapping>
+							</mappings>
+						</configuration>
+					</plugin>
+    			</plugins>
+    		</build>
+    	</profile>
+    </profiles>
     <build>
         <!-- Create a zip file according to elasticsearch naming scheme -->
         <plugins>
@@ -119,20 +159,15 @@
                     </execution>
                 </executions>
             </plugin>
-
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>			
         </plugins>
-
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>1.6</source>
-                        <target>1.6</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
     </build>
 </project>
