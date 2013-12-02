@@ -73,6 +73,25 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
         assertThat(new JSONObject(sr.getHits().hits()[0].sourceAsString()).getString("name"), equalTo("hello world"));
         assertThat(new JSONObject(sr.getHits().hits()[1].sourceAsString()).getString("name"), equalTo("peter ä test"));
     }
+    
+    @Test public void reindexAllTypes() throws Exception {
+        add("oldtweets", "tweet1", "{ \"name\" : \"hello world\", \"count\" : 1}");
+        add("oldtweets", "tweet2", "{ \"name\" : \"peter ä test\", \"count\" : 2}");
+        refresh("oldtweets");
+        assertThat(count("oldtweets"), equalTo(2L));
+
+        int res = action.reindex(scrollSearch("oldtweets", null, ""), "tweets", "tweet", false, 0);
+        assertThat(res, equalTo(2));
+        refresh("tweets");
+        assertThat(count("tweets"), equalTo(2L));
+
+        // now check if content was correctly streamed and saved
+        SearchResponse sr = client.prepareSearch("tweets").
+                addSort("count", SortOrder.ASC).execute().actionGet();
+        assertThat(sr.getHits().hits().length, equalTo(2));
+        assertThat(new JSONObject(sr.getHits().hits()[0].sourceAsString()).getString("name"), equalTo("hello world"));
+        assertThat(new JSONObject(sr.getHits().hits()[1].sourceAsString()).getString("name"), equalTo("peter ä test"));
+    }
 
     @Test public void reindexAllPartial() throws Exception {
         add("oldtweets", "tweet", "{ \"name\" : \"hello world\", \"count\" : 1}");

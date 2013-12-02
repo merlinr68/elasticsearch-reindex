@@ -65,7 +65,7 @@ public class ExampleUsage {
                 for (MySearchHit h : hits.getHits()) {
                     try {
                         String str = new String(h.source(), charset);
-                        RewriteSearchHit newHit = new RewriteSearchHit(h.id(), h.version(), str);
+                        RewriteSearchHit newHit = new RewriteSearchHit(h.id(), h.type(), h.version(), str);
                         String someField = newHit.get("some_field");
                         if (someField.contains("some content")) {
                             newHit.put("some_field", "IT WORKS!");
@@ -118,11 +118,13 @@ public class ExampleUsage {
     public static class RewriteSearchHit implements MySearchHit {
 
         String id;
+        String type;
         long version;
         JSONObject json;
 
-        public RewriteSearchHit(String id, long version, String jsonStr) {
+        public RewriteSearchHit(String id, String type, long version, String jsonStr) {
             this.id = id;
+            this.type=type;
             this.version = version;
             try {
                 json = new JSONObject(jsonStr);
@@ -154,6 +156,10 @@ public class ExampleUsage {
 
         @Override public String id() {
             return id;
+        }
+        
+        @Override public String type() {
+            return type;
         }
 
         @Override public long version() {

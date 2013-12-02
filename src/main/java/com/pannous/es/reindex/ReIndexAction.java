@@ -43,7 +43,9 @@ public class ReIndexAction extends BaseRestHandler {
         if (controller != null) {
             // Define REST endpoints to do a reindex
             controller.registerHandler(PUT, "/{index}/{type}/_reindex", this);
+            controller.registerHandler(PUT, "/{index}/_reindex", this);
             controller.registerHandler(POST, "/{index}/{type}/_reindex", this);
+            controller.registerHandler(POST, "/{index}/_reindex", this);
         }
     }
 
@@ -113,11 +115,14 @@ public class ReIndexAction extends BaseRestHandler {
     public SearchRequestBuilder createScrollSearch(String oldIndexName, String oldType, String filter,
             int hitsPerPage, boolean withVersion, int keepTimeInMinutes) {
         SearchRequestBuilder srb = client.prepareSearch(oldIndexName).
-                setTypes(oldType).
                 setVersion(withVersion).
                 setSize(hitsPerPage).
                 setSearchType(SearchType.SCAN).
                 setScroll(TimeValue.timeValueMinutes(keepTimeInMinutes));
+        if(oldType!=null)
+        {
+        	srb.setTypes(oldType);
+        }
 
         if (filter != null && !filter.trim().isEmpty())
             srb.setFilter(filter);
@@ -177,7 +182,7 @@ public class ReIndexAction extends BaseRestHandler {
             }
 
             try {
-                IndexRequest indexReq = Requests.indexRequest(indexName).type(newType).id(hit.id()).source(hit.source());
+                IndexRequest indexReq = Requests.indexRequest(indexName).type(newType==null ? hit.type() : newType).id(hit.id()).source(hit.source());
                 if (withVersion)
                     indexReq.version(hit.version());
 

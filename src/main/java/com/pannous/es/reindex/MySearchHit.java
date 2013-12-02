@@ -21,6 +21,8 @@ package com.pannous.es.reindex;
 public interface MySearchHit {
 
     String id();
+    
+    String type();
 
     long version();
 

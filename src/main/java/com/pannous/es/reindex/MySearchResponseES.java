@@ -104,6 +104,10 @@ public class MySearchResponseES implements MySearchResponse {
         @Override public String id() {
             return sh.id();
         }
+        
+        @Override public String type() {
+            return sh.getType();
+        }
 
         @Override public long version() {
             return sh.version();

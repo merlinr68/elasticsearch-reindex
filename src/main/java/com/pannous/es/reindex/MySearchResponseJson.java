@@ -86,7 +86,8 @@ public class MySearchResponseJson implements MySearchResponse {
 
         // initial query to get scroll id for our specific search
         try {
-            String url = searchHost + ":" + searchPort + "/" + searchIndexName + "/" + searchType
+        	String typePart= searchType==null ? "" : "/" + searchType;
+            String url = searchHost + ":" + searchPort + "/" + searchIndexName + typePart
                     + "/_search?search_type=scan&scroll=" + keepMin + "m&size=" + hitsPerPage;
 
             String query;
@@ -131,12 +132,13 @@ public class MySearchResponseJson implements MySearchResponse {
                 JSONObject hitJson = arr.getJSONObject(i);
                 long version = -1;
                 String id = hitJson.getString("_id");
+                String type = hitJson.getString("_type");
                 String sourceStr = hitJson.getString("_source");
                 byte[] source = sourceStr.getBytes("UTF-8");
                 if (withVersion && hitJson.has("_version"))
                     version = hitJson.getLong("_version");
                 bytes += source.length;
-                MySearchHitJson res = new MySearchHitJson(id, source, version);
+                MySearchHitJson res = new MySearchHitJson(id, source, version, type);
                 bufferedHits.add(res);
             }
             return bufferedHits.size();
@@ -155,8 +157,9 @@ public class MySearchResponseJson implements MySearchResponse {
         String id;
         byte[] source;
         long version;
+        String type;
 
-        public MySearchHitJson(String id, byte[] source, long version) {
+        public MySearchHitJson(String id, byte[] source, long version, String type) {
             this.id = id;
             this.source = source;
             this.version = version;
@@ -164,6 +167,10 @@ public class MySearchResponseJson implements MySearchResponse {
 
         @Override public String id() {
             return id;
+        }
+        
+        @Override public String type() {
+            return type;
         }
 
         @Override public long version() {
