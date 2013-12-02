@@ -82,6 +82,7 @@
 							</execution>
 						</executions>
 						<configuration>
+							<copyright>karussell - Apache License 2.0</copyright>
 							<group>Application/Internet</group>
 							<defaultFilemode>644</defaultFilemode>
 		                    <defaultDirmode>755</defaultDirmode>
