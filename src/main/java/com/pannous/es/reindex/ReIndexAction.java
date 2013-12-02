@@ -53,7 +53,7 @@ public class ReIndexAction extends BaseRestHandler {
         handleRequest(request, channel, null, false);
     }
 
-    public void handleRequest(RestRequest request, RestChannel channel, String newTypeOverride, boolean internalCall) {
+    public void handleRequest(RestRequest request, RestChannel channel, String typeOverride, boolean internalCall) {
         logger.info("ReIndexAction.handleRequest [{}]", request.params());
         try {
             XContentBuilder builder = restContentBuilder(request);
@@ -62,10 +62,8 @@ public class ReIndexAction extends BaseRestHandler {
             if (searchIndexName == null || searchIndexName.isEmpty())
                 searchIndexName = newIndexName;
 
-            String newType = newTypeOverride != null ? newTypeOverride : request.param("type");
-            String searchType = newTypeOverride != null ? newTypeOverride : request.param("searchType");
-            if (searchType == null || searchType.isEmpty())
-                searchType = newType;
+            String newType = typeOverride != null ? typeOverride : request.param("type");
+            String searchType = typeOverride != null ? typeOverride : request.param("searchType");
 
             int searchPort = request.paramAsInt("searchPort", 9200);
             String searchHost = request.param("searchHost", "localhost");
