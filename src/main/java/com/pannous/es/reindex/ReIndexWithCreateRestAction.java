@@ -1,7 +1,12 @@
 package com.pannous.es.reindex;
 
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestRequest.Method.PUT;
+import static org.elasticsearch.rest.RestStatus.OK;
+import static org.elasticsearch.rest.action.support.RestXContentBuilder.restContentBuilder;
+
 import java.io.IOException;
-import java.util.Map;
+
 import org.elasticsearch.action.admin.cluster.state.ClusterStateRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
@@ -12,31 +17,29 @@ import org.elasticsearch.action.count.CountRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.cluster.metadata.IndexMetaData;
 import org.elasticsearch.cluster.metadata.MappingMetaData;
+import org.elasticsearch.common.hppc.cursors.ObjectCursor;
+import org.elasticsearch.common.hppc.cursors.ObjectObjectCursor;
 import org.elasticsearch.common.inject.Inject;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
-import static org.elasticsearch.rest.RestRequest.Method.*;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.rest.StringRestResponse;
 import org.elasticsearch.rest.XContentRestResponse;
 import org.elasticsearch.rest.XContentThrowableRestResponse;
-import static org.elasticsearch.rest.RestRequest.Method.*;
-import static org.elasticsearch.rest.RestStatus.*;
-import static org.elasticsearch.rest.action.support.RestXContentBuilder.*;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 
 /**
  * @author Peter Karich
  */
-public class ReIndexWithCreate extends BaseRestHandler {
+public class ReIndexWithCreateRestAction extends BaseRestHandler {
 
-    private ReIndexAction reindexAction;
+    private ReIndexRestAction reindexAction;
 
-    @Inject public ReIndexWithCreate(Settings settings, Client client, RestController controller) {
+    @Inject public ReIndexWithCreateRestAction(Settings settings, Client client, RestController controller) {
         super(settings, client);
 
         // Define REST endpoints to do a reindex
@@ -45,7 +48,7 @@ public class ReIndexWithCreate extends BaseRestHandler {
 
         // give null controller as argument to avoid registering twice
         // which would lead to an assert exception
-        reindexAction = new ReIndexAction(settings, client, null);
+        reindexAction = new ReIndexRestAction(settings, client, null);
     }
 
     @Override public void handleRequest(RestRequest request, RestChannel channel) {
@@ -92,8 +95,8 @@ public class ReIndexWithCreate extends BaseRestHandler {
                         actionGet().getState().metaData().indices().get(searchIndexName);
                 Settings searchIndexSettings = indexData.settings();
 
-                for(Map.Entry<String, MappingMetaData> me : indexData.mappings().entrySet()) {
-                    reindexAction.handleRequest(request, channel, me.getKey(), true);
+                for(ObjectObjectCursor<String, MappingMetaData> me : indexData.mappings()) {
+                    reindexAction.handleRequest(request, channel, me.key, true);
                 }
             }
             else {
@@ -147,8 +150,8 @@ public class ReIndexWithCreate extends BaseRestHandler {
         
         if(type.equals("*")) {
             createReq = new CreateIndexRequest(newIndex);
-            for(Map.Entry<String, MappingMetaData> me : indexData.mappings().entrySet()) {
-                createReq.mapping(me.getKey(), me.getValue().sourceAsMap());
+            for(ObjectObjectCursor<String, MappingMetaData> me : indexData.mappings()) {
+                createReq.mapping(me.key, me.value.sourceAsMap());
             }
             createReq.settings(settingBuilder.build());
         }
@@ -170,9 +173,9 @@ public class ReIndexWithCreate extends BaseRestHandler {
         IndicesAliasesRequest aReq = new IndicesAliasesRequest();
         boolean empty = true;
         if(meta != null && meta.aliases() != null) {
-            for (String oldAlias : meta.aliases().keySet()) {
+            for (ObjectCursor<String> oldAlias : meta.aliases().keys()) {
                 empty = false;
-                aReq.addAlias(index, oldAlias);
+                aReq.addAlias(index, oldAlias.value);
             }
         }
         boolean aliasIncludeIndex = request.paramAsBoolean("addOldIndexAsAlias", false);

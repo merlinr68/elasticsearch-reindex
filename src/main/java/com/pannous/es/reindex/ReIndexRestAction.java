@@ -35,9 +35,9 @@ import static org.elasticsearch.rest.action.support.RestXContentBuilder.*;
  *
  * @author Peter Karich
  */
-public class ReIndexAction extends BaseRestHandler {
+public class ReIndexRestAction extends BaseRestHandler {
 
-    @Inject public ReIndexAction(Settings settings, Client client, RestController controller) {
+    @Inject public ReIndexRestAction(Settings settings, Client client, RestController controller) {
         super(settings, client);
 
         if (controller != null) {

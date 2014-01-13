@@ -29,7 +29,7 @@ import org.testng.annotations.BeforeMethod;
 public abstract class ReIndexActionTester extends AbstractNodesTests {
 
     protected Client client;
-    protected ReIndexAction action;
+    protected ReIndexRestAction action;
     // protected String indexNames = "oldtweets,tweets";
 
     @BeforeClass public void createNodes() throws Exception {
@@ -45,7 +45,7 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
     @BeforeMethod public void setUp() {
         client.admin().indices().delete(new DeleteIndexRequest()).actionGet();
         Settings emptySettings = ImmutableSettings.settingsBuilder().build();
-        action = new ReIndexAction(emptySettings, client, new RestController(emptySettings));
+        action = new ReIndexRestAction(emptySettings, client, new RestController(emptySettings));
     }
 
     protected MySearchResponse scrollSearch(String searchIndex, String searchType, String query) {
