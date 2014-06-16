@@ -3,7 +3,6 @@ package com.pannous.es.reindex;
 import static org.elasticsearch.rest.RestRequest.Method.POST;
 import static org.elasticsearch.rest.RestRequest.Method.PUT;
 import static org.elasticsearch.rest.RestStatus.OK;
-import static org.elasticsearch.rest.action.support.RestXContentBuilder.restContentBuilder;
 
 import java.io.IOException;
 
@@ -24,13 +23,11 @@ import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
 import org.elasticsearch.rest.RestStatus;
-import org.elasticsearch.rest.StringRestResponse;
-import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
 
 /**
  * @author Peter Karich
@@ -54,21 +51,21 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
     @Override public void handleRequest(RestRequest request, RestChannel channel) {
         logger.info("ReIndexWithCreate.handleRequest [{}]", request.toString());
         try {
-            XContentBuilder builder = restContentBuilder(request);
+            XContentBuilder builder = channel.newBuilder();
             // required parameters
             String newIndexName = request.param("index");
             if (newIndexName.isEmpty()) {
-                channel.sendResponse(new StringRestResponse(RestStatus.EXPECTATION_FAILED, "parameter index missing"));
+                channel.sendResponse(new BytesRestResponse(RestStatus.EXPECTATION_FAILED, "parameter index missing"));
                 return;
             }
             String type = request.param("type", "");
             if (type.isEmpty()) {
-                channel.sendResponse(new StringRestResponse(RestStatus.EXPECTATION_FAILED, "parameter type missing"));
+                channel.sendResponse(new BytesRestResponse(RestStatus.EXPECTATION_FAILED, "parameter type missing"));
                 return;
             }
             String searchIndexName = request.param("searchIndex");
             if (searchIndexName.isEmpty()) {
-                channel.sendResponse(new StringRestResponse(RestStatus.EXPECTATION_FAILED, "parameter searchIndex missing"));
+                channel.sendResponse(new BytesRestResponse(RestStatus.EXPECTATION_FAILED, "parameter searchIndex missing"));
                 return;
             }
             int newShards = request.paramAsInt("newIndexShards", -1);
@@ -82,7 +79,7 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
             } catch (Exception ex) {
                 String str = "Problem while creating index " + newIndexName + " from " + searchIndexName + " " + ex.getMessage();
                 logger.error(str, ex);
-                channel.sendResponse(new StringRestResponse(RestStatus.INTERNAL_SERVER_ERROR, str));
+                channel.sendResponse(new BytesRestResponse(RestStatus.INTERNAL_SERVER_ERROR, str));
                 return;
             }
 
@@ -123,11 +120,11 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
             if (copyAliases)
                 copyAliases(request);
                 
-            channel.sendResponse(new XContentRestResponse(request, OK, builder));
+            channel.sendResponse(new BytesRestResponse(OK, builder));
                 
         } catch (Exception ex) { // also catch the RuntimeException thrown by ReIndexAction
             try {
-                channel.sendResponse(new XContentThrowableRestResponse(request, ex));
+                channel.sendResponse(new BytesRestResponse(channel, ex));
             } catch (Exception ex2) {
                 logger.error("problem while rolling index", ex2);
             }

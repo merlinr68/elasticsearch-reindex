@@ -1,10 +1,15 @@
 package com.pannous.es.reindex;
 
+import static org.elasticsearch.rest.RestRequest.Method.POST;
+import static org.elasticsearch.rest.RestRequest.Method.PUT;
+import static org.elasticsearch.rest.RestStatus.OK;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -21,14 +26,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.rest.BaseRestHandler;
+import org.elasticsearch.rest.BytesRestResponse;
 import org.elasticsearch.rest.RestChannel;
 import org.elasticsearch.rest.RestController;
 import org.elasticsearch.rest.RestRequest;
-import org.elasticsearch.rest.XContentRestResponse;
-import org.elasticsearch.rest.XContentThrowableRestResponse;
-import static org.elasticsearch.rest.RestRequest.Method.*;
-import static org.elasticsearch.rest.RestStatus.*;
-import static org.elasticsearch.rest.action.support.RestXContentBuilder.*;
 
 /**
  * Refeeds all the documents which matches the type and the (optional) query.
@@ -56,7 +57,7 @@ public class ReIndexRestAction extends BaseRestHandler {
     public void handleRequest(RestRequest request, RestChannel channel, String typeOverride, boolean internalCall) {
         logger.info("ReIndexAction.handleRequest [{}]", request.params());
         try {
-            XContentBuilder builder = restContentBuilder(request);
+            XContentBuilder builder = channel.newBuilder();
             String newIndexName = request.param("index");
             String searchIndexName = request.param("searchIndex");
             if (searchIndexName == null || searchIndexName.isEmpty())
@@ -96,11 +97,11 @@ public class ReIndexRestAction extends BaseRestHandler {
             logger.info("Finished reindexing of index " + searchIndexName + " into " + newIndexName + ", query " + filter);
 
             if (!internalCall)
-                channel.sendResponse(new XContentRestResponse(request, OK, builder));
+                channel.sendResponse(new BytesRestResponse(OK, builder));
         } catch (IOException ex) {
             if (!internalCall) {
                 try {
-                    channel.sendResponse(new XContentThrowableRestResponse(request, ex));
+                    channel.sendResponse(new BytesRestResponse(channel, ex));
                 } catch (Exception ex2) {
                     logger.error("problem while rolling index", ex2);
                 }
@@ -123,7 +124,7 @@ public class ReIndexRestAction extends BaseRestHandler {
         }
 
         if (filter != null && !filter.trim().isEmpty())
-            srb.setFilter(filter);
+            srb.setPostFilter(filter);
         return srb;
     }
 
