@@ -63,9 +63,7 @@
     </dependencies>
     <profiles>
     	<profile>
-    		<activation>
-    			<os><family>!windows</family></os>
-    		</activation>
+    		<id>rpm</id>
     		<build>
     			<plugins>
     				<plugin>
