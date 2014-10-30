@@ -48,11 +48,11 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
         action = new ReIndexRestAction(emptySettings, client, new RestController(emptySettings));
     }
 
-    protected MySearchResponse scrollSearch(String searchIndex, String searchType, String query) {
-        return scrollSearch(searchIndex, searchType, query, 10, false, 1);
+    protected MySearchResponse scrollSearch(Client client, String searchIndex, String searchType, String query) {
+        return scrollSearch(client, searchIndex, searchType, query, 10, false, 1);
     }
 
-    protected abstract MySearchResponse scrollSearch(String searchIndex, String searchType,
+    protected abstract MySearchResponse scrollSearch(Client client, String searchIndex, String searchType,
             String filter, int hits, boolean withVersion, int keepMinutes);
 
     @Test public void reindexAll() throws Exception {
@@ -61,7 +61,7 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
         refresh("oldtweets");
         assertThat(count("oldtweets"), equalTo(2L));
 
-        int res = action.reindex(scrollSearch("oldtweets", "tweet", ""), "tweets", "tweet", false, 0);
+        int res = action.reindex(client, scrollSearch(client, "oldtweets", "tweet", ""), "tweets", "tweet", false, 0);
         assertThat(res, equalTo(2));
         refresh("tweets");
         assertThat(count("tweets"), equalTo(2L));
@@ -80,7 +80,7 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
         refresh("oldtweets");
         assertThat(count("oldtweets"), equalTo(2L));
 
-        int res = action.reindex(scrollSearch("oldtweets", null, ""), "tweets", "tweet", false, 0);
+        int res = action.reindex(client, scrollSearch(client, "oldtweets", null, ""), "tweets", "tweet", false, 0);
         assertThat(res, equalTo(2));
         refresh("tweets");
         assertThat(count("tweets"), equalTo(2L));
@@ -98,7 +98,7 @@ public abstract class ReIndexActionTester extends AbstractNodesTests {
         add("oldtweets", "tweet", "{ \"name\" : \"peter test\", \"count\" : 2}");
         refresh("oldtweets");
         assertThat(count("oldtweets"), equalTo(2L));
-        int res = action.reindex(scrollSearch("oldtweets", "tweet", "{ \"term\": { \"count\" : 2} }"), "tweets", "tweet", false, 0);
+        int res = action.reindex(client, scrollSearch(client, "oldtweets", "tweet", "{ \"term\": { \"count\" : 2} }"), "tweets", "tweet", false, 0);
         assertThat(res, equalTo(1));
         refresh("tweets");
         assertThat(count("tweets"), equalTo(1L));

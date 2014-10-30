@@ -9,6 +9,8 @@ import org.elasticsearch.common.network.NetworkUtils;
 import org.elasticsearch.common.settings.ImmutableSettings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.test.TestCluster;
+
 import static org.elasticsearch.common.settings.ImmutableSettings.Builder.EMPTY_SETTINGS;
 import static org.elasticsearch.common.settings.ImmutableSettings.settingsBuilder;
 import static org.elasticsearch.node.NodeBuilder.nodeBuilder;
@@ -28,6 +30,7 @@ public abstract class AbstractNodesTests {
 
     public void putDefaultSettings(Settings.Builder settings) {
         putDefaultSettings(settings.build());
+//        TestCluster.nameFilter(nodeName)
     }
 
     public void putDefaultSettings(Settings settings) {

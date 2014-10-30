@@ -48,7 +48,8 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
         reindexAction = new ReIndexRestAction(settings, client, null);
     }
 
-    @Override public void handleRequest(RestRequest request, RestChannel channel) {
+    @Override 
+    public void handleRequest(RestRequest request, RestChannel channel, Client client) {
         logger.info("ReIndexWithCreate.handleRequest [{}]", request.toString());
         try {
             XContentBuilder builder = channel.newBuilder();
@@ -74,7 +75,7 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
                     logger.info("target index already exists, skip creation: " + newIndexName);
                 }
                 else {
-                    createIdenticalIndex(searchIndexName, type, newIndexName, newShards);
+                    createIdenticalIndex(client, searchIndexName, type, newIndexName, newShards);
                 }
             } catch (Exception ex) {
                 String str = "Problem while creating index " + newIndexName + " from " + searchIndexName + " " + ex.getMessage();
@@ -93,11 +94,11 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
                 Settings searchIndexSettings = indexData.settings();
 
                 for(ObjectObjectCursor<String, MappingMetaData> me : indexData.mappings()) {
-                    reindexAction.handleRequest(request, channel, me.key, true);
+                    reindexAction.handleRequest(request, channel, client, me.key, true);
                 }
             }
             else {
-                reindexAction.handleRequest(request, channel, type, true);
+                reindexAction.handleRequest(request, channel, client, type, true);
             }
 
             boolean delete = request.paramAsBoolean("delete", false);
@@ -118,7 +119,7 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
 
             boolean copyAliases = request.paramAsBoolean("copyAliases", false);
             if (copyAliases)
-                copyAliases(request);
+                copyAliases(client, request);
                 
             channel.sendResponse(new BytesRestResponse(OK, builder));
                 
@@ -134,7 +135,7 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
     /**
      * Creates a new index out of the settings from the old index.
      */
-    private void createIdenticalIndex(String oldIndex, String type,
+    private void createIdenticalIndex(Client client, String oldIndex, String type,
             String newIndex, int newIndexShards) throws IOException {
         IndexMetaData indexData = client.admin().cluster().state(new ClusterStateRequest()).
                 actionGet().getState().metaData().indices().get(oldIndex);
@@ -162,7 +163,7 @@ public class ReIndexWithCreateRestAction extends BaseRestHandler {
         client.admin().indices().create(createReq).actionGet();
     }
 
-    private void copyAliases(RestRequest request) {
+    private void copyAliases(Client client, RestRequest request) {
         String index = request.param("index");
         String searchIndexName = request.param("searchIndex");
         IndexMetaData meta = client.admin().cluster().state(new ClusterStateRequest()).

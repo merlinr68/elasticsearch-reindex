@@ -50,11 +50,12 @@ public class ReIndexRestAction extends BaseRestHandler {
         }
     }
 
-    @Override public void handleRequest(RestRequest request, RestChannel channel) {
-        handleRequest(request, channel, null, false);
+    @Override 
+    public void handleRequest(RestRequest request, RestChannel channel, Client client) {
+        handleRequest(request, channel, client, null, false);
     }
 
-    public void handleRequest(RestRequest request, RestChannel channel, String typeOverride, boolean internalCall) {
+    public void handleRequest(RestRequest request, RestChannel channel, Client client, String typeOverride, boolean internalCall) {
         logger.info("ReIndexAction.handleRequest [{}]", request.params());
         try {
             XContentBuilder builder = channel.newBuilder();
@@ -77,7 +78,7 @@ public class ReIndexRestAction extends BaseRestHandler {
             String filter = request.content().toUtf8();
             MySearchResponse rsp;
             if (localAction) {
-                SearchRequestBuilder srb = createScrollSearch(searchIndexName, searchType, filter,
+                SearchRequestBuilder srb = createScrollSearch(client,searchIndexName, searchType, filter,
                         hitsPerPage, withVersion, keepTimeInMinutes);
                 SearchResponse sr = srb.execute().actionGet();
                 rsp = new MySearchResponseES(client, sr, keepTimeInMinutes);
@@ -89,29 +90,27 @@ public class ReIndexRestAction extends BaseRestHandler {
 
             // TODO make async and allow control of process from external (e.g. stopping etc)
             // or just move stuff into a river?
-            reindex(rsp, newIndexName, newType, withVersion, waitInSeconds);
+            reindex(client, rsp, newIndexName, newType, withVersion, waitInSeconds);
 
             // TODO reindex again all new items => therefor we need a timestamp field to filter
             // + how to combine with existing filter?
 
             logger.info("Finished reindexing of index " + searchIndexName + " into " + newIndexName + ", query " + filter);
 
-            if (!internalCall)
                 channel.sendResponse(new BytesRestResponse(OK, builder));
         } catch (IOException ex) {
-            if (!internalCall) {
-                try {
-                    channel.sendResponse(new BytesRestResponse(channel, ex));
-                } catch (Exception ex2) {
-                    logger.error("problem while rolling index", ex2);
-                }
-            } else {
-                throw new RuntimeException(ex);
+            try
+            {
+                channel.sendResponse(new BytesRestResponse(channel, ex));
+            }
+            catch (Exception ex2)
+            {
+                logger.error("problem while rolling index", ex2);
             }
         }
     }
 
-    public SearchRequestBuilder createScrollSearch(String oldIndexName, String oldType, String filter,
+    public SearchRequestBuilder createScrollSearch(Client client, String oldIndexName, String oldType, String filter,
             int hitsPerPage, boolean withVersion, int keepTimeInMinutes) {
         SearchRequestBuilder srb = client.prepareSearch(oldIndexName).
                 setVersion(withVersion).
@@ -128,7 +127,7 @@ public class ReIndexRestAction extends BaseRestHandler {
         return srb;
     }
 
-    public int reindex(MySearchResponse rsp, String newIndex, String newType, boolean withVersion,
+    public int reindex(Client client, MySearchResponse rsp, String newIndex, String newType, boolean withVersion,
             float waitSeconds) {
         boolean flushEnabled = false;
         long total = rsp.hits().totalHits();
@@ -152,7 +151,7 @@ public class ReIndexRestAction extends BaseRestHandler {
                 break;
             queryWatch.stop();
             StopWatch updateWatch = new StopWatch().start();
-            failed += bulkUpdate(res, newIndex, newType, withVersion).size();
+            failed += bulkUpdate(client, res, newIndex, newType, withVersion).size();
             if (flushEnabled)
                 client.admin().indices().flush(new FlushRequest(newIndex)).actionGet();
 
@@ -171,7 +170,7 @@ public class ReIndexRestAction extends BaseRestHandler {
         return collectedResults;
     }
 
-    Collection<Integer> bulkUpdate(MySearchHits objects, String indexName,
+    Collection<Integer> bulkUpdate(Client client, MySearchHits objects, String indexName,
             String newType, boolean withVersion) {
         BulkRequestBuilder brb = client.prepareBulk();
         for (MySearchHit hit : objects.getHits()) {

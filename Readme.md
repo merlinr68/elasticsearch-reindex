@@ -53,7 +53,7 @@ Now JSONObjects and the HttpClient will be used. TODO that is probably not effic
 >  { "term" : { "count" : 2 } }'
 
 Further parameters:
- * hitsPerPage - used as search limit and at the same time for bulk indexing (default 100)
+ * hitsPerPage - used as search limit and at the same time for bulk indexing (default 1000)
  * keepTimeInMinutes - the maximum time in minutes a scroll search is valid (default 30) increase if you have more data
  * withVersion - if the version of a document should be respected (default false)
  * waitInSeconds - pause the specified time after every request pair (one search+one bulkIndex). 

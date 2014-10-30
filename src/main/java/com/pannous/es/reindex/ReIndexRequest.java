@@ -9,4 +9,5 @@ public class ReIndexRequest extends BroadcastOperationRequest<ReIndexRequest> {
 	private String type;
 	private String searchType;
 
+	
 }
